@@ -57,4 +57,12 @@ def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['Q
                 df_list.append(df)
         df = pd.concat(df_list)
         df['cik'] = df['cik'].map(lambda x: (10-len(str(x)))*str(0) + str(x) if len(str(x))<10 else str(x))
+        df.set_index('cik', drop = True)
         return df
+
+def download_raw_filing(fname, base_url = 'https://www.sec.gov/Archives/', agent = "Name Surname name.surname@gmail.com"):
+    full_url = base_url + fname
+    response = requests.get(full_url, headers = {"User-Agent":"Debora Ramella debora.ramell@gmail.com"})
+    if response.status_code != 200:
+        return f"Unable to download from {full_url}"
+    return response.text
