@@ -62,7 +62,7 @@ def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['Q
 
 def download_raw_filing(fname, base_url = 'https://www.sec.gov/Archives/', agent = "Name Surname name.surname@gmail.com"):
     full_url = base_url + fname
-    response = requests.get(full_url, headers = {"User-Agent":"Debora Ramella debora.ramell@gmail.com"})
+    response = requests.get(full_url, headers = {"User-Agent": agent})
     if response.status_code != 200:
         return f"Unable to download from {full_url}"
     return response.text
