@@ -1,3 +1,10 @@
 .env
-notebooks/.ipynb_checkpoints
 .python-version
+
+# Python
+*checkpoint.ipynb
+*.ipynb_checkpoints
+*__pycache__
+# Raw Data
+*.zip
+*.Z
