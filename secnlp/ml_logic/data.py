@@ -1,10 +1,12 @@
 import os
 import io
 import glob
+import unlzw
 import requests
-from unlzw import unlzw
-from secnlp.utils import add_trailing_zeroes_cik
 import pandas as pd
+from google.cloud import bigquery
+from secnlp.utils import add_trailing_zeroes_cik
+
 
 def current_edgar_companies_list(url = "https://www.sec.gov/files/company_tickers.json",
                                 agent = "Name Surname name.surname@gmail.com") -> pd.DataFrame:
@@ -62,7 +64,7 @@ def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['Q
         for file_path in glob.glob('./master_data/*'):
             with open(file_path, 'rb') as file:
                 compressed_data = file.read()
-                uncompressed_data = unlzw(compressed_data)
+                uncompressed_data = unlzw.unlzw(compressed_data)
                 decoded_data = uncompressed_data.decode('latin-1')
                 data_io = io.StringIO(decoded_data)
                 df = pd.read_csv(data_io, sep='|', header=None, names=['cik','company','form_type','date_filed','file_name'],skiprows=11)
@@ -72,13 +74,62 @@ def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['Q
         df.set_index('cik', drop = True)
         return df
 
-def download_raw_filing(fname: str, base_url = 'https://www.sec.gov/Archives/',
-                        agent = "Name Surname name.surname@gmail.com") -> str:
+def scrape_filings(fnames, agent, base_url = 'https://www.sec.gov/Archives/'):
+    filings = []
+
+    with requests.Session() as session:
+        for index, f in enumerate(fnames):
+            full_url = base_url + f
+            try:
+                response = session.get(full_url, headers={"User-Agent": agent})
+                response.raise_for_status()  # Raises an HTTPError for bad responses
+                filings.append(response.text)
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching {full_url}: {e}")
+                filings.append('NA')
+
+    return filings
+
+def load_data_to_bq(
+        credentials: str,
+        data: pd.DataFrame,
+        gcp_project:str,
+        bq_dataset:str,
+        table: str,
+        truncate: bool):
     """
-    Returns the raw filing test as a string.
+    - Save the DataFrame to BigQuery
+    - Empty the table beforehand if `truncate` is True, append otherwise
     """
-    full_url = base_url + fname
-    response = requests.get(full_url, headers = {"User-Agent": agent})
-    if response.status_code != 200:
-        return f"Unable to download from {full_url}"
-    return response.text
+
+    assert isinstance(data, pd.DataFrame)
+    full_table_name = f"{gcp_project}.{bq_dataset}.{table}"
+
+    data.columns = [f"_{column}" if not str(column)[0].isalpha() and not str(column)[0] == "_" else str(column) for column in data.columns]
+
+    client = bigquery.Client(credentials)
+
+    # Define write mode and schema
+    write_mode = "WRITE_TRUNCATE" if truncate else "WRITE_APPEND"
+    job_config = bigquery.LoadJobConfig(write_disposition=write_mode)
+
+    print(f"\n{'Write' if truncate else 'Append'} {full_table_name} ({data.shape[0]} rows)")
+
+    # Load data
+    job = client.load_table_from_dataframe(data, full_table_name, job_config=job_config)
+    result = job.result()  # wait for the job to complete
+
+    print(f"✅ Data saved to bigquery, with shape {data.shape}")
+
+def read_data_from_bq(
+        credentials: str,
+        gcp_project:str,
+        bq_dataset:str,
+        table: str):
+    """
+    - Read BigQuery table as a DataFrame
+    """
+    client = bigquery.Client.from_service_account_json(credentials)
+    # Fetch the data from BigQuery into a DataFrame
+    query_job = client.query(f"SELECT * FROM {gcp_project}.{bq_dataset}.{table}")
+    return query_job.to_dataframe()
