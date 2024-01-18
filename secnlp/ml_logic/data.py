@@ -3,10 +3,10 @@ import io
 import glob
 import unlzw
 import requests
+import numpy as np
 import pandas as pd
-from google.cloud import bigquery
+from bs4 import BeautifulSoup
 from secnlp.utils import add_trailing_zeroes_cik
-
 
 def current_edgar_companies_list(url = "https://www.sec.gov/files/company_tickers.json",
                                 agent = "Name Surname name.surname@gmail.com") -> pd.DataFrame:
@@ -20,7 +20,7 @@ def current_edgar_companies_list(url = "https://www.sec.gov/files/company_ticker
     df.drop_duplicates(inplace=True,subset=['cik','name'])
     df['cik'] = df['cik'].apply(lambda x: add_trailing_zeroes_cik(x))
     df['name'] = df['name'].str.capitalize()
-    df.set_index('cik',drop=True,inplace=True)
+    df.set_index    ('cik',drop=True,inplace=True)
     return df
 
 def basic_info_company(cik_list: list,url = "https://data.sec.gov/submissions/",
@@ -90,46 +90,11 @@ def scrape_filings(fnames, agent, base_url = 'https://www.sec.gov/Archives/'):
 
     return filings
 
-def load_data_to_bq(
-        credentials: str,
-        data: pd.DataFrame,
-        gcp_project:str,
-        bq_dataset:str,
-        table: str,
-        truncate: bool):
-    """
-    - Save the DataFrame to BigQuery
-    - Empty the table beforehand if `truncate` is True, append otherwise
-    """
-
-    assert isinstance(data, pd.DataFrame)
-    full_table_name = f"{gcp_project}.{bq_dataset}.{table}"
-
-    data.columns = [f"_{column}" if not str(column)[0].isalpha() and not str(column)[0] == "_" else str(column) for column in data.columns]
-
-    client = bigquery.Client(credentials)
-
-    # Define write mode and schema
-    write_mode = "WRITE_TRUNCATE" if truncate else "WRITE_APPEND"
-    job_config = bigquery.LoadJobConfig(write_disposition=write_mode)
-
-    print(f"\n{'Write' if truncate else 'Append'} {full_table_name} ({data.shape[0]} rows)")
-
-    # Load data
-    job = client.load_table_from_dataframe(data, full_table_name, job_config=job_config)
-    result = job.result()  # wait for the job to complete
-
-    print(f"✅ Data saved to bigquery, with shape {data.shape}")
-
-def read_data_from_bq(
-        credentials: str,
-        gcp_project:str,
-        bq_dataset:str,
-        table: str):
-    """
-    - Read BigQuery table as a DataFrame
-    """
-    client = bigquery.Client.from_service_account_json(credentials)
-    # Fetch the data from BigQuery into a DataFrame
-    query_job = client.query(f"SELECT * FROM {gcp_project}.{bq_dataset}.{table}")
-    return query_job.to_dataframe()
+# Function to fetch content from a URL
+def fetch_text_from_url(url, agent):
+    full_url = 'https://www.sec.gov/Archives/' + url
+    response = requests.get(full_url, headers={"User-Agent": agent})
+    if response.status_code == 200:
+        return response.text
+    else:
+        return np.nan
