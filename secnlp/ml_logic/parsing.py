@@ -4,25 +4,25 @@ import string
 import bleach
 from bs4 import BeautifulSoup
 
-regex_expressions = {"7":
-                    {"start": "item\s*[7][\.\;\:\-\_]*\s*\\bM",
-                     "end" : "item\s*7a[\.\;\:\-\_]\sQuanti|item\s*8[\.\,\;\:\-\_]\s*"},
-                    "1" :
-                    {"start" : "item\s*1[\.\;\:\-\_]*\s*\bB\b",
-                     "end" : "item\s*1[abc][\.\,\;\:\-\_]\s*(?:Risk|Unresolved|Cyber)|item\s*2[\.\,\;\:\-\_]\s*Properties"}
-                    }
-
-def parse_10k_10q_filing_item7(text,item = '7'):
+def parse_10k_filing_items(text,item = '7'):
+    if type(item) != 'str':
+        item = str(item)
     # Define regex patterns outside the loop for better performance
     if item == '7':
         item_start = re.compile("item\s*[7][\.\;\:\-\_]*\s*\\bM", re.IGNORECASE)
         item_end = re.compile("item\s*7a[\.\;\:\-\_]\sQuanti|item\s*8[\.\,\;\:\-\_]\s*", re.IGNORECASE)
+    elif item == '7a':
+        item_start = re.compile("Item\s*7A\.\s*Quantitative", re.IGNORECASE)
+        item_end = re.compile("item\s*[8][\.\;\:\-\_]*\s*\\bF", re.IGNORECASE)
     elif item == '1':
-        item_start = re.compile("item\s*1[\.\;\:\-\_]*\s*B", re.IGNORECASE)
+        item_start = re.compile("item\s*1[\.\;\:\-\_]*\s*Bu", re.IGNORECASE)
         item_end = re.compile("item\s*1[abc][\.\,\;\:\-\_]\s*(?:Risk|Unresolved|Cyber)|item\s*2[\.\,\;\:\-\_]\s*Properties", re.IGNORECASE)
     elif item == '1a':
         item_start = re.compile("item\s*1[a][\.\;\:\-\_]*\s*R", re.IGNORECASE)
         item_end = re.compile("item\s*1[bc][\.\,\;\:\-\_]\s*(?:Unresolved|Cyber)|item\s*2[\.\,\;\:\-\_]\s*Properties", re.IGNORECASE)
+    elif item == '2':
+        item_start = re.compile("item\s*[23][\.\;\:\-\_].*?L", re.IGNORECASE)
+        item_end = re.compile('item\s*4[\.\,\;\:\-\_]\s*Mine|Part\s*2[\.\,\;\:\-\_]\s*', re.IGNORECASE)
 
     # Find all start and end positions using finditer
     starts = [i.start() for i in item_start.finditer(text)]
@@ -40,7 +40,7 @@ def parse_10k_10q_filing_item7(text,item = '7'):
         item_position = max(positions, key=lambda p: p[1] - p[0])
         return text[item_position[0]:item_position[1]]
     else:
-        print(f"Unable to locate Item 1")
+        print(f"Unable to locate Item {item}")
         return None
 
 def cleaning(text):
