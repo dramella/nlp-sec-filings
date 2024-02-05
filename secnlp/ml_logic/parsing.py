@@ -69,14 +69,15 @@ def parse_10q_filing_items(text,item = '7'):
         return None
 
 def cleaning(text):
+    # Removing HTML tags
+    soup = BeautifulSoup(text, 'html.parser')
+    for table in soup.find_all('table'):
+        table.decompose()
+    text = soup.get_text(separator=' ', strip=True)
     # Replace new lines
     text = text.replace('\n', ' ')
-    # Removing HTML tags
-    text = bleach.clean(text, tags=[], strip=True)
     # Removing URLs
     text = re.compile(r'https?://\S+|www\.\S+').sub('', text)
-    # Removing whitespaces
-    text = text.strip()
     # Lowercasing
     text = text.lower()
     # Removing contractions
