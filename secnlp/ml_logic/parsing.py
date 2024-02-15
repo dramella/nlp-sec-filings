@@ -69,26 +69,31 @@ def parse_10q_filing_items(text,item = '7'):
         print(f"Unable to locate Item {item}")
         return None
 
-def cleaning(text):
-    # Removing HTML tags
-    soup = BeautifulSoup(text, 'html.parser')
-    for table in soup.find_all('table'):
-        table.decompose()
-    text = soup.get_text(separator=' ', strip=True)
-    # Replace new lines
-    text = text.replace('\n', ' ')
-    # Removing URLs
-    text = re.compile(r'https?://\S+|www\.\S+').sub('', text)
-    # Lowercasing
-    text = text.lower()
-    # Removing contractions
-    text = contractions.fix(text)
-    # Removing punctuation
-    for punctuation in string.punctuation:
-        text = text.replace(punctuation, '')
-        # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text)
-        # Removing irrelevant characters
-    text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+def cleaning(texts):
+    if type(texts) == 'str':
+        texts = [texts]
+    cleaned_texts = []
+    for text in texts:
+        # Removing HTML tags
+        soup = BeautifulSoup(text, 'html.parser')
+        for table in soup.find_all('table'):
+            table.decompose()
+        text = soup.get_text(separator=' ', strip=True)
+        # Replace new lines
+        text = text.replace('\n', ' ')
+        # Removing URLs
+        text = re.compile(r'https?://\S+|www\.\S+').sub('', text)
+        # Lowercasing
+        text = text.lower()
+        # Removing contractions
+        text = contractions.fix(text)
+        # Removing punctuation
+        for punctuation in string.punctuation:
+            text = text.replace(punctuation, '')
+            # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text)
+            # Removing irrelevant characters
+        text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+        cleaned_texts.append(text)
 
-    return text
+    return cleaned_texts
