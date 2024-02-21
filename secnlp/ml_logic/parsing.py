@@ -9,7 +9,7 @@ def parse_10k_filing_items(text,item = '7'):
     # Define regex patterns outside the loop for better performance
     if item == '7':
         #item_start = re.compile("item\s*[7][\.\;\:\-\_]*\s*\\bM", re.IGNORECASE)
-        item_start = re.compile(r"item\s*7[^\w]*\s*(?:&\w+;|\d+\.)*\s*(?:</?b>)?\s*m",re.IGNORECASE)
+        item_start = re.compile(r"item\s*7\s*.*?ma",re.IGNORECASE)
         item_end = re.compile("item\s*7a[\.\;\:\-\_]\sQuanti|item\s*8[\.\,\;\:\-\_]\s*", re.IGNORECASE)
     if item == '7a':
         item_start = re.compile(r"Item\s*7A[\s\S]*?\bQu", re.IGNORECASE)
