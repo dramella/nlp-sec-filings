@@ -1,12 +1,13 @@
-import os
 import io
 import glob
-import unlzw
-import requests
+import os
 import numpy as np
 import pandas as pd
-from bs4 import BeautifulSoup
-from secnlp.utils import add_trailing_zeroes_cik
+import requests
+from typing import Union
+import unlzw
+import secnlp.utils as u
+
 
 def current_edgar_companies_list(url = "https://www.sec.gov/files/company_tickers.json",
                                 agent = "Name Surname name.surname@gmail.com") -> pd.DataFrame:
@@ -18,29 +19,29 @@ def current_edgar_companies_list(url = "https://www.sec.gov/files/company_ticker
     df = pd.DataFrame(data = [d for d in response.json().values()])
     df.rename(columns={'cik_str':'cik','title':'name'},inplace=True)
     df.drop_duplicates(inplace=True,subset=['cik','name'])
-    df['cik'] = df['cik'].apply(lambda x: add_trailing_zeroes_cik(x))
+    df['cik'] = df['cik'].apply(lambda x: u.add_trailing_zeroes_cik(x))
     df['name'] = df['name'].str.capitalize()
     df.set_index    ('cik',drop=True,inplace=True)
     return df
 
-def basic_info_company(cik_list: list,url = "https://data.sec.gov/submissions/",
-                       agent = "Name Surname name.surname@gmail.com") -> pd.DataFrame:
+def basic_info_company(cik: Union[str, int], url: str = "https://data.sec.gov/submissions/CIK",
+                       agent: str = "Name Surname name.surname@gmail.com") -> dict:
     """
-    Dowbload basic company information for a list of CIKs.
+    Download basic company information for a given CIK.
     """
-    headers = {"User-Agent": agent}
-    sliced_keys=['cik','sic','sicDescription','tickers','exchanges','fiscalYearEnd']
-    company_basic_info_df_list = []
-    for i in cik_list:
-        company_facts_url = url + f'CIK{i}.json'
-        response = requests.get(company_facts_url, headers=headers)
-        sliced_dict = {key: response.json()[key] for key in sliced_keys}
-        company_basic_info_df_list.append(pd.DataFrame(sliced_dict))
-    df = pd.concat(company_basic_info_df_list)
-    df.drop_duplicates('cik', inplace=True)
-    df['cik'] = df['cik'].apply(lambda x: add_trailing_zeroes_cik(x))
-    df.set_index('cik',drop=True,inplace=True)
-    return df
+    cik_str = u.add_trailing_zeroes_cik(str(cik))  # Assuming u.add_trailing_zeroes_cik is defined
+
+    try:
+        response = requests.get(f"{url}/{cik_str}.json", headers={"User-Agent": agent})
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data for CIK {cik}: {e}")
+        return {}
+
+    data = response.json()
+    return data
+
+
 
 def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['QTR1','QTR2','QTR3','QTR4'],
                               agent = "Name Surname name.surname@gmail.com", uncompress = False):
@@ -70,25 +71,26 @@ def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['Q
                 df = pd.read_csv(data_io, sep='|', header=None, names=['cik','company','form_type','date_filed','file_name'],skiprows=11)
                 df_list.append(df)
         df = pd.concat(df_list)
-        df['cik'] = df['cik'].apply(lambda x: add_trailing_zeroes_cik(x))
+        df['cik'] = df['cik'].apply(lambda x: u.add_trailing_zeroes_cik(x))
         df.set_index('cik', drop = True)
         return df
 
-def scrape_filings(fnames, agent, base_url = 'https://www.sec.gov/Archives/'):
-    filings = []
 
-    with requests.Session() as session:
-        for index, f in enumerate(fnames):
-            full_url = base_url + f
-            try:
-                response = session.get(full_url, headers={"User-Agent": agent})
-                response.raise_for_status()  # Raises an HTTPError for bad responses
-                filings.append(response.text)
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching {full_url}: {e}")
-                filings.append('NA')
+def scrape_filing(accession_number: str, agent: str, base_url: str = 'https://www.sec.gov/Archives/edgar/data/') -> str:
+    """
+    Scrape filings content for a given accession number.
+    """
+    url = f"{base_url}/{accession_number}"
 
-    return filings
+    try:
+        response = requests.get(url, headers={"User-Agent": agent})
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data for accession number {accession_number}: {e}")
+        return ""
+
+    return response.text
+
 
 # Function to fetch content from a URL
 def fetch_text_from_url(url, agent):
