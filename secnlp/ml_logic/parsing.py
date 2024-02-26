@@ -5,21 +5,40 @@ import bleach
 from bs4 import BeautifulSoup
 
 
+
 def parse_10k_filing_items(text,item = '7'):
+    # basic cleaning to allow parsing
+    text = text.lower()
+    text = text.replace('&#160;',' ')
+    text = text.replace('&#xa0;',' ')
+    text = text.replace('&nbsp;',' ')
+    text = text.replace('-',' ')
+    text = text.replace('&amp;','&')
+    text = text.replace('&#38;','&')
+    text = text.replace('\n', ' ')
+    try:
+        soup = BeautifulSoup(text, 'html.parser')
+        for table in soup.find_all('table'):
+            table.decompose()
+            text = soup.get_text(separator=' ', strip=True)
+    except:
+        text = bleach.clean(text)
+    for punctuation in string.punctuation:
+        text = text.replace(punctuation, ' ')
     # Define regex patterns outside the loop for better performance
     if item == '7':
         #item_start = re.compile("item\s*[7][\.\;\:\-\_]*\s*\\bM", re.IGNORECASE)
         item_start = re.compile(r"item\s*7\s*.*?ma",re.IGNORECASE)
-        item_end = re.compile("item\s*7a[\.\;\:\-\_]\sQuanti|item\s*8[\.\,\;\:\-\_]\s*", re.IGNORECASE)
+        item_end = re.compile("item\s*7a\s*Quanti|item\s*8", re.IGNORECASE)
     if item == '7a':
         item_start = re.compile(r"Item\s*7A[\s\S]*?\bQu", re.IGNORECASE)
         item_end = re.compile(r"Item\s*8[\s\S]*?\bFI", re.IGNORECASE)
     elif item == '1':
-        item_start = re.compile("item\s*1[\.\;\:\-\_]*\s*Business", re.IGNORECASE)
-        item_end = re.compile("item\s*1[abc][\.\,\;\:\-\_]\s*(?:Risk|Unresolved|Cyber)|item\s*2[\.\,\;\:\-\_]\s*Properties", re.IGNORECASE)
+        item_start = re.compile("item\s*1*\s*(Business|Description)", re.IGNORECASE)
+        item_end = re.compile("item\s*1[abc]\s*(?:Risk|Unresolved|Cyber)|item\s*2\s*Properties", re.IGNORECASE)
     elif item == '1a':
-        item_start = re.compile("item\s*1[a][\.\;\:\-\_]*\s*R", re.IGNORECASE)
-        item_end = re.compile("item\s*1[bc][\.\,\;\:\-\_]\s*(?:Unresolved|Cyber)|item\s*2[\.\,\;\:\-\_]\s*Properties", re.IGNORECASE)
+        item_start = re.compile("item\s*1[a]*\s*R", re.IGNORECASE)
+        item_end = re.compile("item\s*1[bc]\s*(?:Unresolved|Cyber)|item\s*2\s*Properties", re.IGNORECASE)
 
     # Find all start and end positions using finditer
     starts = [i.start() for i in item_start.finditer(text)]
