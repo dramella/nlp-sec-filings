@@ -32,7 +32,7 @@ def basic_info_company(cik: Union[str, int], url: str = "https://data.sec.gov/su
     cik_str = u.add_trailing_zeroes_cik(str(cik))  # Assuming u.add_trailing_zeroes_cik is defined
 
     try:
-        response = requests.get(f"{url}/{cik_str}.json", headers={"User-Agent": agent})
+        response = requests.get(f"{url}{cik_str}.json", headers={"User-Agent": agent})
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data for CIK {cik}: {e}")
@@ -76,11 +76,11 @@ def bulk_download_url_filings(start_year = 1993, end_year = 2023, quarters = ['Q
         return df
 
 
-def scrape_filing(accession_number: str, agent: str, base_url: str = 'https://www.sec.gov/Archives/edgar/data/') -> str:
+def scrape_filing(cik: str, accession_number: str, agent: str, base_url: str = 'https://www.sec.gov/Archives/edgar/data') -> str:
     """
     Scrape filings content for a given accession number.
     """
-    url = f"{base_url}/{accession_number}"
+    url = f"{base_url}/{cik}/{accession_number.strip().replace('-','')}/{accession_number.strip()}.txt"
 
     try:
         response = requests.get(url, headers={"User-Agent": agent})
