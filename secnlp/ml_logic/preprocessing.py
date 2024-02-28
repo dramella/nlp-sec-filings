@@ -21,6 +21,6 @@ class LemmaTokenizer:
 
 
 pipeline_without_stop_words = Pipeline([
-    ('cleaning', FunctionTransformer(p.cleaning, validate=False)),
+    ('cleaning', FunctionTransformer(p.clean_text, validate=False)),
     ('tokenizing, lemmatizing, vectorizing', CountVectorizer(tokenizer=LemmaTokenizer(rm_stopwords=False),stop_words=None, ngram_range=(2, 2)))
     ])
