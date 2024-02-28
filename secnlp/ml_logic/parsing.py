@@ -112,5 +112,4 @@ def clean_text(text):
 
     # Remove irrelevant characters
     text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
-
     return text
