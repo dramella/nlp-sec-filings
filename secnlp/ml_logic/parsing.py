@@ -50,8 +50,8 @@ def parse_10q_filing_items(text,item = '2'):
         item_start = re.compile(r"Item\s*2[\s\S]*?\bMa", re.IGNORECASE)
         item_end = re.compile(r"Item\s*3[\s\S]*?\bQu", re.IGNORECASE)
     if item == '1a':
-        item_start = re.compile(r"Item\s*1A\.[\s\S]*?(?=\bRi)", re.IGNORECASE)
-        item_end = re.compile(r"Item\s*5\.[\s\S]*?(?=\bOt)", re.IGNORECASE)
+        item_start = re.compile(r"Item\s*1A[\s\S]*?(?=\bRi)", re.IGNORECASE)
+        item_end = re.compile(r"Item\s*5[\s\S]*?(?=\bOt)|Item\s*2[\s\S]*?(?=\bUn)", re.IGNORECASE)
 
     # Find all start and end positions using finditer
     starts = [i.start() for i in item_start.finditer(text)]
