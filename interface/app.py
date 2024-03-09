@@ -14,7 +14,7 @@ style_dropdown = {'width': '100px', 'marginRight': '20px', 'display': 'inline-bl
 # Define the layout of the app
 app.layout = html.Div([
     # Header
-    html.H1("Simple Dash Form", style={'textAlign': 'center', 'marginBottom': 10}),
+    html.H1("SEC Filing Retriever", style={'textAlign': 'center', 'marginBottom': 10, 'color': '#0099FF'}),
 
     # Input form section
     html.Div([
@@ -55,7 +55,7 @@ app.layout = html.Div([
     ]),
 
     # Submit button
-    html.Button('Submit', id='submit-button', style={'backgroundColor': '#4CAF50', 'color': 'white', 'padding': '10px 15px',
+    html.Button('Submit', id='submit-button', style={'backgroundColor': '#0099FF', 'color': 'white', 'padding': '10px 15px',
                                                      'border': 'none', 'display': 'block',
                                                      'margin': 'auto', 'marginTop': '20px'}),
 
