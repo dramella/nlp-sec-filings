@@ -29,7 +29,7 @@ def basic_info_company(cik: Union[str, int], url: str = "https://data.sec.gov/su
     """
     Download basic company information for a given CIK.
     """
-    cik_str = u.add_trailing_zeroes_cik(str(cik))  # Assuming u.add_trailing_zeroes_cik is defined
+    cik_str = u.add_trailing_zeroes_cik(str(cik))# Assuming u.add_trailing_zeroes_cik is defined
 
     try:
         response = requests.get(f"{url}{cik_str}.json", headers={"User-Agent": agent})

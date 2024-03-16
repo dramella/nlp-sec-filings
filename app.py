@@ -2,7 +2,9 @@
 # Import necessary packages
 ########################################################################################################################
 import os
-from dash import Dash, html, dcc
+import pandas as pd
+from datetime import datetime
+from dash import Dash, html, dcc, dash_table
 from dash.dependencies import Input, Output, State
 from secnlp.ml_logic import data as d
 from dotenv import load_dotenv
@@ -82,7 +84,7 @@ app.layout = html.Div([
                                                      'margin': 'auto', 'marginTop': '20px'}),
 
     # Output container
-    html.Div(id='output-container', style={'marginTop': 20, 'fontWeight': 'bold', 'fontSize': 16, 'margin': 'auto'}),
+    html.Div(id='output-container', style={'marginTop': 50, 'fontWeight': 'bold', 'fontSize': 16}),
 ],style={'maxWidth': '950px', 'margin': 'auto'})
 
 
@@ -95,8 +97,13 @@ app.layout = html.Div([
      State('quarter-input', 'value')]
 )
 def update_output(n_clicks, company, year, filing_type, quarter):
-    result = f"Company: {company}, Year: {year}, Filing Type: {filing_type}, Quarter: {quarter}"
-    return result
+    if n_clicks:
+        raw_data = d.basic_info_company(cik = company, agent = os.environ.get('AGENT'))
+        data_df = pd.DataFrame(data = {k: raw_data[k] for k in ['sicDescription','name','tickers','exchanges','fiscalYearEnd']})
+        data_df = data_df.rename({'sicDescription': 'Standard Industrial Classification', 'fiscalYearEnd': 'Fiscal Year End'},axis=1)
+        data_df.columns = data_df.columns.str.capitalize()
+        data_df['Fiscal year end'] = data_df['Fiscal year end'].apply(lambda x: datetime.strptime(x, '%m%d').strftime('%d %B'))
+        return dash_table.DataTable(data_df.to_dict('records'), [{"name": i, "id": i} for i in data_df.columns])
 
 # Run the app if the script is executed
 if __name__ == '__main__':
